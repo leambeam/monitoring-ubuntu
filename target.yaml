@@ -1,0 +1,45 @@
+#cloud-config
+
+users:
+- name: ubuntu
+  # yaml-language-server-disable Array
+  ssh_authorized_keys: []
+
+packages:
+- apt: [avahi-daemon]
+
+write_files:
+- path: /etc/systemd/system/node_exporter.service
+  content: |
+    [Unit]
+    Description=Prometheus Node Exporter service
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    User=node_exporter
+    Type=exec
+    ExecStart=/usr/local/bin/node_exporter
+    Restart=on-failure
+
+    [Install]
+    WantedBy=multi-user.target
+
+runcmd:
+- [systemctl, enable, --now, avahi-daemon]
+- |
+  set -e
+  VERSION=1.12.1
+  ARCH=arm64
+  NAME=node_exporter-"${VERSION}".linux-"${ARCH}"
+  BASE=https://github.com/prometheus/node_exporter/releases/download/v"${VERSION}"
+
+  cd /tmp
+  id node_exporter >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin node_exporter
+  wget -q "${BASE}/${NAME}.tar.gz" "${BASE}/sha256sums.txt"
+  grep "${NAME}.tar.gz" sha256sums.txt | sha256sum -c -
+  tar xfz "${NAME}.tar.gz"
+  install -m 0755 "${NAME}/node_exporter" /usr/local/bin/node_exporter
+  rm -rf "${NAME}.tar.gz" "${NAME}" sha256sums.txt
+  systemctl daemon-reload
+  systemctl enable --now node_exporter
