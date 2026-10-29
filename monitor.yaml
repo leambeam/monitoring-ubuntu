@@ -1,0 +1,79 @@
+#cloud-config
+
+users:
+- name: ubuntu
+  # yaml-language-server-disable Array
+  ssh_authorized_keys: []
+- name: prometheus
+  system: true
+  no_create_home: true
+  shell: /usr/sbin/nologin
+
+write_files:
+- path: /etc/systemd/system/prometheus.service
+  content: |
+    [Unit]
+    Description=Prometheus service
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    User=prometheus
+    Type=exec
+    ExecStart=/usr/local/bin/prometheus \
+      --config.file=/etc/prometheus/prometheus.yml \
+      --storage.tsdb.path=/var/lib/prometheus \
+      --storage.tsdb.retention.size=1GB
+    Restart=on-failure
+    ExecReload=/bin/kill -HUP $MAINPID
+
+    [Install]
+    WantedBy=multi-user.target
+
+# /etc/prometheus and prometheus.yml will be owned by root:root
+# with 0644 permissions; might be switched to prometheus:prometheus later
+- path: /etc/prometheus/prometheus.yml
+  # defer: true
+  content: |
+    global:
+      scrape_interval: 15s
+
+    scrape_configs:
+    - job_name: node
+      static_configs:
+      - targets: ['target.local:9100']
+
+# Prometheus resolves via the systemd-resolved, not NSS/avahi, so resolved must do mDNS for target.local
+# lookups + announcing this host as monitor.local
+- path: /etc/systemd/resolved.conf.d/mdns.conf
+  content: |
+    [Resolve]
+    MulticastDNS=yes
+
+# Link-level: actually turns mDNS on for enp0s1
+- path: /etc/systemd/network/10-netplan-default.network.d/mdns.conf
+  content: |
+    [Network]
+    MulticastDNS=yes
+
+runcmd:
+- [systemctl, restart, systemd-resolved]
+- [networkctl, reload]
+- [networkctl, reconfigure, enp0s1]
+- |
+  set -e
+  VERSION=3.15.1
+  ARCH=arm64
+  NAME=prometheus-"${VERSION}".linux-"${ARCH}"
+  BASE=https://github.com/prometheus/prometheus/releases/download/v"${VERSION}"
+
+  cd /tmp
+  wget -q "${BASE}/${NAME}.tar.gz" "${BASE}/sha256sums.txt"
+  grep "${NAME}.tar.gz" sha256sums.txt | sha256sum -c -
+  tar xfz "${NAME}.tar.gz"
+  install -d -o prometheus -g prometheus -m 0755 /var/lib/prometheus
+  install -m 0755 "${NAME}/prometheus" /usr/local/bin/prometheus
+  install -m 0755 "${NAME}/promtool" /usr/local/bin/promtool
+  rm -rf "${NAME}.tar.gz" "${NAME}" sha256sums.txt
+  systemctl daemon-reload
+  systemctl enable --now prometheus
