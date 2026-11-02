@@ -56,6 +56,10 @@ write_files:
     [Network]
     MulticastDNS=yes
 
+- path: /etc/chrony/conf.d/makestep.conf
+  content: |
+    makestep 1.0 -1
+
 runcmd:
 - [systemctl, restart, systemd-resolved]
 - [networkctl, reload]
