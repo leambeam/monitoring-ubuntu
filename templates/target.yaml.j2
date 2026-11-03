@@ -15,19 +15,7 @@ packages:
 write_files:
 - path: /etc/systemd/system/node_exporter.service
   content: |
-    [Unit]
-    Description=Prometheus Node Exporter service
-    After=network-online.target
-    Wants=network-online.target
-
-    [Service]
-    User=node_exporter
-    Type=exec
-    ExecStart=/usr/local/bin/node_exporter
-    Restart=on-failure
-
-    [Install]
-    WantedBy=multi-user.target
+{{ read("node_exporter/node_exporter.service") | indent(4, true) }}
 
 - path: /etc/chrony/conf.d/makestep.conf
   content: |

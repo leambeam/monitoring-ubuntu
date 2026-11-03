@@ -2,7 +2,6 @@
 
 users:
 - name: ubuntu
-  # yaml-language-server-disable Array
   ssh_authorized_keys: []
 - name: prometheus
   system: true
@@ -12,36 +11,14 @@ users:
 write_files:
 - path: /etc/systemd/system/prometheus.service
   content: |
-    [Unit]
-    Description=Prometheus service
-    After=network-online.target
-    Wants=network-online.target
-
-    [Service]
-    User=prometheus
-    Type=exec
-    ExecStart=/usr/local/bin/prometheus \
-      --config.file=/etc/prometheus/prometheus.yml \
-      --storage.tsdb.path=/var/lib/prometheus \
-      --storage.tsdb.retention.size=1GB
-    Restart=on-failure
-    ExecReload=/bin/kill -HUP $MAINPID
-
-    [Install]
-    WantedBy=multi-user.target
+{{ read("prometheus/prometheus.service") | indent(4, true) }}
 
 # /etc/prometheus and prometheus.yml will be owned by root:root
 # with 0644 permissions; might be switched to prometheus:prometheus later
 - path: /etc/prometheus/prometheus.yml
   # defer: true
   content: |
-    global:
-      scrape_interval: 15s
-
-    scrape_configs:
-    - job_name: node
-      static_configs:
-      - targets: ['target.local:9100']
+{{ read("prometheus/prometheus.yml") | indent(4, true) }}
 
 # Prometheus resolves via the systemd-resolved, not NSS/avahi, so resolved must do mDNS for target.local
 # lookups + announcing this host as monitor.local
