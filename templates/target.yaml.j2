@@ -17,24 +17,16 @@ write_files:
   content: |
 {{ read("node_exporter/node_exporter.service") | indent(4, true) }}
 
+- path: /scripts/install.sh
+  content: |
+{{ read("scripts/install.sh") | indent(4, true) }}
+
 - path: /etc/chrony/conf.d/makestep.conf
   content: |
     makestep 1.0 -1
 
 runcmd:
 - [systemctl, enable, --now, avahi-daemon]
-- |
-  set -e
-  VERSION=1.12.1
-  ARCH=arm64
-  NAME=node_exporter-"${VERSION}".linux-"${ARCH}"
-  BASE=https://github.com/prometheus/node_exporter/releases/download/v"${VERSION}"
-
-  cd /tmp
-  wget -q "${BASE}/${NAME}.tar.gz" "${BASE}/sha256sums.txt"
-  grep "${NAME}.tar.gz" sha256sums.txt | sha256sum -c -
-  tar xfz "${NAME}.tar.gz"
-  install -m 0755 "${NAME}/node_exporter" /usr/local/bin/node_exporter
-  rm -rf "${NAME}.tar.gz" "${NAME}" sha256sums.txt
-  systemctl daemon-reload
-  systemctl enable --now node_exporter
+- [sh, /scripts/install.sh, 1.12.1, arm64, node_exporter]
+- [systemctl, daemon-reload]
+- [systemctl, enable, --now, node_exporter]

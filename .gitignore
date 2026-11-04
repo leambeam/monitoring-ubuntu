@@ -1,2 +1,4 @@
 refs/
 build/
+.DS_Store
+.venv

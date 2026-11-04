@@ -2,6 +2,7 @@
 
 users:
 - name: ubuntu
+  # yaml-language-server-disable Array
   ssh_authorized_keys: []
 - name: prometheus
   system: true
@@ -19,6 +20,10 @@ write_files:
   # defer: true
   content: |
 {{ read("prometheus/prometheus.yml") | indent(4, true) }}
+
+- path: /scripts/install.sh
+  content: |
+{{ read("scripts/install.sh") | indent(4, true) }}
 
 # Prometheus resolves via the systemd-resolved, not NSS/avahi, so resolved must do mDNS for target.local
 # lookups + announcing this host as monitor.local
@@ -41,20 +46,7 @@ runcmd:
 - [systemctl, restart, systemd-resolved]
 - [networkctl, reload]
 - [networkctl, reconfigure, enp0s1]
-- |
-  set -e
-  VERSION=3.15.1
-  ARCH=arm64
-  NAME=prometheus-"${VERSION}".linux-"${ARCH}"
-  BASE=https://github.com/prometheus/prometheus/releases/download/v"${VERSION}"
-
-  cd /tmp
-  wget -q "${BASE}/${NAME}.tar.gz" "${BASE}/sha256sums.txt"
-  grep "${NAME}.tar.gz" sha256sums.txt | sha256sum -c -
-  tar xfz "${NAME}.tar.gz"
-  install -d -o prometheus -g prometheus -m 0755 /var/lib/prometheus
-  install -m 0755 "${NAME}/prometheus" /usr/local/bin/prometheus
-  install -m 0755 "${NAME}/promtool" /usr/local/bin/promtool
-  rm -rf "${NAME}.tar.gz" "${NAME}" sha256sums.txt
-  systemctl daemon-reload
-  systemctl enable --now prometheus
+- [sh, /scripts/install.sh, 3.15.1, arm64, prometheus]
+- install -d -o prometheus -g prometheus -m 0755 /var/lib/prometheus
+- [systemctl, daemon-reload]
+- [systemctl, enable, --now, prometheus]
