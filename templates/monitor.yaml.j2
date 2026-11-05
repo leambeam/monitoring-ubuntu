@@ -25,6 +25,18 @@ write_files:
   content: |
 {{ read("scripts/install.sh") | indent(4, true) }}
 
+- path: /scripts/install-grafana.sh
+  content: |
+{{ read("scripts/install-grafana.sh") | indent(4, true) }}
+
+- path: /etc/grafana/provisioning/datasources/prometheus.yaml
+  content: |
+{{ read("grafana/provisioning/datasources/prometheus.yaml") | indent(4, true) }}
+
+- path: /etc/grafana/provisioning/dashboards/default.yaml
+  content: |
+{{ read("grafana/provisioning/dashboards/default.yaml") | indent(4, true) }}
+
 # Prometheus resolves via the systemd-resolved, not NSS/avahi, so resolved must do mDNS for target.local
 # lookups + announcing this host as monitor.local
 - path: /etc/systemd/resolved.conf.d/mdns.conf
@@ -48,5 +60,9 @@ runcmd:
 - [networkctl, reconfigure, enp0s1]
 - [sh, /scripts/install.sh, 3.15.1, arm64, prometheus]
 - install -d -o prometheus -g prometheus -m 0755 /var/lib/prometheus
+- sh /scripts/install-grafana.sh 13.3.0 40412481033 arm64
+- install -d -o grafana -g grafana -m 0755 /var/lib/grafana/dashboards
+- [wget, -q, -O, /var/lib/grafana/dashboards/node-exporter-full.json, https://grafana.com/api/dashboards/1860/revisions/46/download]
 - [systemctl, daemon-reload]
 - [systemctl, enable, --now, prometheus]
+- [systemctl, enable, --now, grafana-server]
