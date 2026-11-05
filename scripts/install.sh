@@ -3,7 +3,7 @@
 # usage: ./install.sh VERSION ARCH TOOL; run with sudo/as root
 set -eu
 
-usage="usage: install.sh VERSION ARCH TOOL"
+usage="usage: ./install.sh VERSION ARCH TOOL"
 VERSION=${1:?${usage}}
 ARCH=${2:?${usage}}
 TOOL=${3:?${usage}}
@@ -14,7 +14,8 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 cd "${TMP}"
 
-wget -q "${BASE}/${NAME}.tar.gz" "${BASE}/sha256sums.txt"
+wget -q -O "${NAME}.tar.gz" "${BASE}/${NAME}.tar.gz"
+wget -q -O sha256sums.txt "${BASE}/sha256sums.txt"
 grep -F " ${NAME}.tar.gz" sha256sums.txt | sha256sum -c -
 tar xzf "${NAME}.tar.gz"
 
