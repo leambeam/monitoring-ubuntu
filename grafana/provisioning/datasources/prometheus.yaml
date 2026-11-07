@@ -8,5 +8,8 @@ datasources:
   type: prometheus
   access: proxy
   url: http://127.0.0.1:9090
+  jsonData:
+    prometheusType: Prometheus
+    prometheusVersion: "3.15.1"
   isDefault: true
   editable: false
