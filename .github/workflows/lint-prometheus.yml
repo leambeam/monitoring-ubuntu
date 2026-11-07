@@ -1,0 +1,30 @@
+name: Lint Prometheus
+on:
+  push:
+    paths:
+      - "prometheus/*.yml"
+      - ".github/workflows/lint-prometheus.yml"
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repo to the runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Promtool
+        shell: bash
+        working-directory: /tmp
+        env:
+          VERSION: 3.15.1
+        run: |
+          wget https://github.com/prometheus/prometheus/releases/download/v${{ env.VERSION }}/prometheus-${{ env.VERSION }}.linux-amd64.tar.gz
+          tar -xzf prometheus-${{ env.VERSION }}.linux-amd64.tar.gz
+          mkdir -p $HOME/.local/bin
+          mv prometheus-${{ env.VERSION }}.linux-amd64/promtool $HOME/.local/bin
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Run the Promtool
+        run: promtool check config prometheus/*.yml
