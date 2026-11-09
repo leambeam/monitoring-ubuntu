@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "redhat.vscode-yaml",
-        "coolbear.systemd-unit-file"
+        "coolbear.systemd-unit-file",
+        "editorconfig.editorconfig"
     ]
 }
