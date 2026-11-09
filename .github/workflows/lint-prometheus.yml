@@ -1,30 +1,55 @@
-name: Lint Prometheus
+name: Prometheus configuration validation
 on:
   push:
     paths:
-      - "prometheus/*.yml"
-      - ".github/workflows/lint-prometheus.yml"
+      - "prometheus/**/*.yml"
+      - "prometheus/**/*.yaml"
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: Lint
+  prometheus-validation:
+    name: Validate Prometheus configuration
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Check out the repo to the runner
+      - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Promtool
+
+      - name: Install promtool
         shell: bash
         working-directory: /tmp
         env:
           VERSION: 3.15.1
         run: |
-          wget https://github.com/prometheus/prometheus/releases/download/v${{ env.VERSION }}/prometheus-${{ env.VERSION }}.linux-amd64.tar.gz
-          tar -xzf prometheus-${{ env.VERSION }}.linux-amd64.tar.gz
-          mkdir -p $HOME/.local/bin
-          mv prometheus-${{ env.VERSION }}.linux-amd64/promtool $HOME/.local/bin
+          wget "https://github.com/prometheus/prometheus/releases/download/v${VERSION}/prometheus-${VERSION}.linux-amd64.tar.gz"
+          tar -xzf "prometheus-${VERSION}.linux-amd64.tar.gz"
+          mkdir -p "$HOME/.local/bin"
+          mv "prometheus-${VERSION}.linux-amd64/promtool" "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: Run the Promtool
-        run: promtool check config prometheus/*.yml
+
+      - name: Detect changed Prometheus files
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: changes
+        with:
+          filters: |
+            config:
+              - 'prometheus/prometheus.y*ml'
+            web-config:
+              - 'prometheus/web.y*ml'
+            rules:
+              - 'prometheus/rules/*.y*ml'
+
+      # 'workflow_dispatch' runs every check; glob both *.yaml and *.yml
+      - name: Validate Prometheus server configuration
+        if: steps.changes.outputs.config == 'true' || github.event_name != 'push'
+        run: promtool check config --syntax-only prometheus/prometheus.y*ml
+
+      - name: Validate Prometheus web configuration
+        if: steps.changes.outputs.web-config == 'true' || github.event_name != 'push'
+        run: promtool check web-config prometheus/web.y*ml
+
+      - name: Validate Prometheus rule files
+        if: steps.changes.outputs.rules == 'true' || github.event_name != 'push'
+        run: promtool check rules prometheus/rules/*.y*ml
