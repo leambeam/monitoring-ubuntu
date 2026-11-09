@@ -1,0 +1,45 @@
+name: Cloud-init validation
+on:
+  push:
+    paths:
+      - "grafana/**"
+      - "node_exporter/**"
+      - "prometheus/**"
+      - "scripts/**"
+      - "templates/**"
+      - "render.py"
+      - "requirements.txt"
+  workflow_dispatch:
+
+jobs:
+  cloud-init-validation:
+    name: Validate cloud-init configurations
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14.7"
+          cache: "pip"
+      - name: Render cloud-init configurations
+        run: |
+          pip install -r requirements.txt
+          ./render.py monitor
+          ./render.py target
+      - name: Add test SSH key to rendered configurations
+        shell: bash
+        working-directory: build
+        run: |
+          ssh-keygen -t "ed25519" -f "id_ed25519" -N "" &>/dev/null
+          public_key=$(cat id_ed25519.pub)
+          sed -i "1,/ssh_authorized_keys: \[.*\]/s|ssh_authorized_keys: \[.*\]|ssh_authorized_keys: [$public_key]|" "monitor.yaml"
+          sed -i "1,/ssh_authorized_keys: \[.*\]/s|ssh_authorized_keys: \[.*\]|ssh_authorized_keys: [$public_key]|" "target.yaml"
+      - name: Validate rendered cloud-init configurations
+        working-directory: build
+        run: |
+          cloud-init schema --config-file monitor.yaml
+          cloud-init schema --config-file target.yaml
