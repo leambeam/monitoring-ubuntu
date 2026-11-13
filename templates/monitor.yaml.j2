@@ -39,12 +39,16 @@ write_files:
 
 # Multipass strips quotes, so 0600 becomes a YAML int and fails the schema, 0o600 stays a string
 - path: /etc/bot/bot-token.txt
-  permissions: '0o600'
+  defer: true
+  permissions: '0o640'
+  owner: root:alertmanager
   content: |
 {{ read(".env.tg").splitlines()[0].strip() | indent(4, true) }}
 
 - path: /etc/bot/chat-id.txt
-  permissions: '0o600'
+  defer: true
+  permissions: '0o640'
+  owner: root:alertmanager
   content: |
 {{ read(".env.tg").splitlines()[1].strip() | indent(4, true) }}
 
