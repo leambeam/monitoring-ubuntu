@@ -1,5 +1,9 @@
 {
     "yaml.schemas": {
-        "https://raw.githubusercontent.com/canonical/cloud-init/main/cloudinit/config/schemas/versions.schema.cloud-config.json": ["build/*.yaml"]
+        "https://raw.githubusercontent.com/canonical/cloud-init/main/cloudinit/config/schemas/versions.schema.cloud-config.json": [
+            "build/*.yaml"
+        ],
+        "https://www.schemastore.org/prometheus.rules.json": "prometheus/rules/node-alerts.yml",
+        "https://www.schemastore.org/prometheus-alertmanager.json": "alertmanager/alertmanager.yml"
     },
 }

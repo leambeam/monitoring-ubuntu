@@ -1,55 +1,70 @@
-name: Prometheus configuration validation
+name: Prometheus and Alertmanager configuration validation
 on:
   push:
     paths:
       - "prometheus/**/*.yml"
       - "prometheus/**/*.yaml"
+      - "alertmanager/**/*.yml"
+      - "alertmanager/**/*.yaml"
+      - "alertmanager/templates/*.tmpl"
   workflow_dispatch:
 
 jobs:
-  prometheus-validation:
-    name: Validate Prometheus configuration
+  monitoring-validation:
+    name: Validate Prometheus and Alertmanager configurations
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PROMETHEUS_VERSION: 3.15.1
+      ALERTMANAGER_VERSION: 0.35.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install promtool
-        shell: bash
-        working-directory: /tmp
-        env:
-          VERSION: 3.15.1
-        run: |
-          wget "https://github.com/prometheus/prometheus/releases/download/v${VERSION}/prometheus-${VERSION}.linux-amd64.tar.gz"
-          tar -xzf "prometheus-${VERSION}.linux-amd64.tar.gz"
-          mkdir -p "$HOME/.local/bin"
-          mv "prometheus-${VERSION}.linux-amd64/promtool" "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Detect changed Prometheus files
+      - name: Detect changed Prometheus and Alertmanager files
         if: github.event_name == 'push'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
         with:
           filters: |
-            config:
+            prometheus-config:
               - 'prometheus/prometheus.y*ml'
-            web-config:
+            prometheus-web-config:
               - 'prometheus/web.y*ml'
-            rules:
+            prometheus-rules:
               - 'prometheus/rules/*.y*ml'
+            alertmanager-config:
+              - 'alertmanager/alertmanager.y*ml'
+            alertmanager-templates:
+              - 'alertmanager/templates/*.tmpl'
+      - name: Install promtool
+        if: >-
+          ${{ github.event_name == 'workflow_dispatch' ||
+              steps.changes.outputs.prometheus-config == 'true' ||
+              steps.changes.outputs.prometheus-web-config == 'true' ||
+              steps.changes.outputs.prometheus-rules == 'true' }}
+        run: sudo ./scripts/install.sh "${PROMETHEUS_VERSION}" amd64 prometheus
+      - name: Install amtool
+        if: >-
+          ${{ github.event_name == 'workflow_dispatch' ||
+              steps.changes.outputs.alertmanager-config == 'true' ||
+              steps.changes.outputs.alertmanager-templates == 'true' }}
+        run: sudo ./scripts/install.sh "${ALERTMANAGER_VERSION}" amd64 alertmanager
 
-      # 'workflow_dispatch' runs every check; glob both *.yaml and *.yml
+      # Manual runs validate all configured files; the web config is optional.
       - name: Validate Prometheus server configuration
-        if: steps.changes.outputs.config == 'true' || github.event_name != 'push'
+        if: ${{ steps.changes.outputs.prometheus-config == 'true' || github.event_name == 'workflow_dispatch' }}
         run: promtool check config --syntax-only prometheus/prometheus.y*ml
-
       - name: Validate Prometheus web configuration
-        if: steps.changes.outputs.web-config == 'true' || github.event_name != 'push'
+        if: ${{ steps.changes.outputs.prometheus-web-config == 'true' || github.event_name == 'workflow_dispatch' }}
         run: promtool check web-config prometheus/web.y*ml
-
       - name: Validate Prometheus rule files
-        if: steps.changes.outputs.rules == 'true' || github.event_name != 'push'
+        if: ${{ steps.changes.outputs.prometheus-rules == 'true' || github.event_name == 'workflow_dispatch' }}
         run: promtool check rules prometheus/rules/*.y*ml
+      - name: Validate Alertmanager configuration
+        if: ${{ steps.changes.outputs.alertmanager-config == 'true' || github.event_name == 'workflow_dispatch' }}
+        run: amtool check-config alertmanager/alertmanager.y*ml
+      - name: Validate Alertmanager templates
+        if: ${{ steps.changes.outputs.alertmanager-templates == 'true' || github.event_name == 'workflow_dispatch' }}
+        run: amtool template render --template.glob='alertmanager/templates/telegram.tmpl' --template.text='{{ template "telegram.message" . }}' --template.type=html >/dev/null

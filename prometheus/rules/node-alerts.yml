@@ -1,0 +1,54 @@
+groups:
+  - name: node_health
+    rules:
+      - alert: NodeRootFilesystemSpaceLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/", fstype!="rootfs"}
+            /
+            node_filesystem_size_bytes{mountpoint="/", fstype!="rootfs"}
+          ) < 0.15
+        for: 10m
+        keep_firing_for: 5m
+        labels:
+          severity: page
+          node: "{{ $labels.instance }}"
+        annotations:
+          summary: "Root filesystem on {{ $labels.instance }} is {{ $value | humanizePercentage }} free (threshold: 15%)"
+
+      - alert: NodeCPUUtilizationHigh
+        expr: |
+          1 - avg by (instance) (
+            rate(node_cpu_seconds_total{mode="idle"}[5m])
+          ) > 0.85
+        for: 5m
+        keep_firing_for: 5m
+        labels:
+          severity: page
+          node: "{{ $labels.instance }}"
+        annotations:
+          summary: "CPU utilization on {{ $labels.instance }} is {{ $value | humanizePercentage }} (threshold: 85%)"
+
+      - alert: NodeMemoryUtilizationHigh
+        expr: |
+          1 - (
+            node_memory_MemAvailable_bytes
+            /
+            node_memory_MemTotal_bytes
+          ) > 0.85
+        for: 10m
+        keep_firing_for: 5m
+        labels:
+          severity: page
+          node: "{{ $labels.instance }}"
+        annotations:
+          summary: "Memory utilization on {{ $labels.instance }} is {{ $value | humanizePercentage }} (threshold: 85%)"
+
+      - alert: NodeExporterTargetDown
+        expr: up{job="node"} == 0
+        for: 5m
+        labels:
+          severity: page
+          node: "{{ $labels.instance }}"
+        annotations:
+          summary: "Prometheus has been unable to scrape node exporter at {{ $labels.instance }} for 5 minutes"

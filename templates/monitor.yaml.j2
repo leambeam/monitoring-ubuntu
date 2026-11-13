@@ -8,6 +8,10 @@ users:
   system: true
   no_create_home: true
   shell: /usr/sbin/nologin
+- name: alertmanager
+  system: true
+  no_create_home: true
+  shell: /usr/sbin/nologin
 
 write_files:
 - path: /etc/systemd/system/prometheus.service
@@ -20,6 +24,33 @@ write_files:
   # defer: true
   content: |
 {{ read("prometheus/prometheus.yml") | indent(4, true) }}
+
+- path: /etc/prometheus/rules/node-alerts.yml
+  content: |
+{{ read("prometheus/rules/node-alerts.yml") | indent(4, true) }}
+
+- path: /etc/systemd/system/alertmanager.service
+  content: |
+{{ read("alertmanager/alertmanager.service") | indent(4, true) }}
+
+- path: /etc/alertmanager/alertmanager.yml
+  content: |
+{{ read("alertmanager/alertmanager.yml") | indent(4, true) }}
+
+# Multipass strips quotes, so 0600 becomes a YAML int and fails the schema, 0o600 stays a string
+- path: /etc/bot/bot-token.txt
+  permissions: '0o600'
+  content: |
+{{ read(".env.tg").splitlines()[0].strip() | indent(4, true) }}
+
+- path: /etc/bot/chat-id.txt
+  permissions: '0o600'
+  content: |
+{{ read(".env.tg").splitlines()[1].strip() | indent(4, true) }}
+
+- path: /etc/alertmanager/templates/telegram.tmpl
+  content: |
+{{ read ("alertmanager/templates/telegram.tmpl") | indent(4, true) }}
 
 - path: /scripts/install.sh
   content: |
@@ -59,10 +90,10 @@ runcmd:
 - [networkctl, reload]
 - [networkctl, reconfigure, enp0s1]
 - [sh, /scripts/install.sh, 3.15.1, arm64, prometheus]
+- [sh, /scripts/install.sh, 0.35.0, arm64, alertmanager]
 - install -d -o prometheus -g prometheus -m 0755 /var/lib/prometheus
 - sh /scripts/install-grafana.sh 13.3.0 40412481033 arm64
 - install -d -o grafana -g grafana -m 0755 /var/lib/grafana/dashboards
 - [wget, -q, -O, /var/lib/grafana/dashboards/node-exporter-full.json, https://grafana.com/api/dashboards/1860/revisions/46/download]
 - [systemctl, daemon-reload]
-- [systemctl, enable, --now, prometheus]
-- [systemctl, enable, --now, grafana-server]
+- [systemctl, --now, enable, prometheus, grafana-server, alertmanager]

@@ -9,7 +9,8 @@ Type=exec
 ExecStart=/usr/local/bin/prometheus \
     --config.file=/etc/prometheus/prometheus.yml \
     --storage.tsdb.path=/var/lib/prometheus \
-    --storage.tsdb.retention.size=1GB
+    --storage.tsdb.retention.size=1GB \
+    --web.external-url=http://monitor.local:9090
 Restart=on-failure
 ExecReload=/bin/kill -HUP $MAINPID
 
