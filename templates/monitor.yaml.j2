@@ -95,7 +95,6 @@ runcmd:
 - [networkctl, reconfigure, enp0s1]
 - [sh, /scripts/install.sh, 3.15.1, arm64, prometheus]
 - [sh, /scripts/install.sh, 0.35.0, arm64, alertmanager]
-- install -d -o prometheus -g prometheus -m 0755 /var/lib/prometheus
 - sh /scripts/install-grafana.sh 13.3.0 40412481033 arm64
 - install -d -o grafana -g grafana -m 0755 /var/lib/grafana/dashboards
 - [wget, -q, -O, /var/lib/grafana/dashboards/node-exporter-full.json, https://grafana.com/api/dashboards/1860/revisions/46/download]

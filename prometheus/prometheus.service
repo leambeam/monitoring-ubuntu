@@ -6,6 +6,7 @@ Wants=network-online.target
 [Service]
 User=prometheus
 Type=exec
+StateDirectory=prometheus
 ExecStart=/usr/local/bin/prometheus \
     --config.file=/etc/prometheus/prometheus.yml \
     --storage.tsdb.path=/var/lib/prometheus \
