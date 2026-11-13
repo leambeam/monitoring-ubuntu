@@ -25,6 +25,8 @@ jobs:
         with:
           python-version: "3.14.7"
           cache: "pip"
+      - name: Add test .env file
+        run: touch .env.tg
       - name: Render cloud-init configurations
         run: |
           pip install -r requirements.txt
