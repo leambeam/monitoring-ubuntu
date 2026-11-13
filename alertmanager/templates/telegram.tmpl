@@ -8,9 +8,9 @@
 {{- end }}
 
 <b>Host:</b> <code>{{ .Labels.instance }}</code>
-<b>Since:</b> {{ .StartsAt.Format "15:04:05 02.01.2006" }}
+<b>Since:</b> {{ .StartsAt | tz "Local" | date "15:04:05 02.01.2006" }}
 {{- if eq .Status "resolved" }}
-<b>Resolved:</b> {{ .EndsAt.Format "15:04:05 02.01.2006" }}
+<b>Resolved:</b> {{ .EndsAt | tz "Local" | date "15:04:05 02.01.2006"}}
 {{- end }}
 <a href="{{ .GeneratorURL }}">Open in Prometheus</a>
 {{ end }}
