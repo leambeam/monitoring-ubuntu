@@ -17,9 +17,9 @@ write_files:
   content: |
 {{ read("node_exporter/node_exporter.service") | indent(4, true) }}
 
-- path: /scripts/install.sh
+- path: /scripts/install-prom.sh
   content: |
-{{ read("scripts/install.sh") | indent(4, true) }}
+{{ read("scripts/install-prom.sh") | indent(4, true) }}
 
 - path: /etc/chrony/conf.d/makestep.conf
   content: |
@@ -27,6 +27,6 @@ write_files:
 
 runcmd:
 - [systemctl, enable, --now, avahi-daemon]
-- [sh, /scripts/install.sh, 1.12.1, arm64, node_exporter]
+- [sh, /scripts/install-prom.sh, 1.12.1, arm64, node_exporter]
 - [systemctl, daemon-reload]
 - [systemctl, enable, --now, node_exporter]

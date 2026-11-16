@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 # Install prometheus tools
-# usage: ./install.sh VERSION ARCH TOOL; run with sudo/as root
+# usage: ./install-prom.sh VERSION ARCH TOOL; run with sudo/as root
 set -eu
 
-usage="usage: ./install.sh VERSION ARCH TOOL"
+usage="usage: ./install-prom.sh VERSION ARCH TOOL"
 VERSION=${1:?${usage}}
 ARCH=${2:?${usage}}
 TOOL=${3:?${usage}}
@@ -20,7 +20,7 @@ grep -F " ${NAME}.tar.gz" sha256sums.txt | sha256sum -c -
 tar xzf "${NAME}.tar.gz"
 
 for bin in "${NAME}"/*; do
-    if [ -f "${bin}" ] && [ -x "${bin}" ]; then
-        install -m 0755 "${bin}" "/usr/local/bin/$(basename "${bin}")"
-    fi
+	if [ -f "${bin}" ] && [ -x "${bin}" ]; then
+		install -m 0755 "${bin}" "/usr/local/bin/$(basename "${bin}")"
+	fi
 done

@@ -6,7 +6,7 @@ route:
   receiver: "telegram"
 
 templates:
-  - /etc/alertmanager/templates/*.tmpl
+  - /etc/alertmanager/templates/telegram.tmpl
 
 receivers:
   - name: "telegram"

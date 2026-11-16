@@ -6,7 +6,7 @@ on:
       - "prometheus/**/*.yaml"
       - "alertmanager/**/*.yml"
       - "alertmanager/**/*.yaml"
-      - "alertmanager/templates/*.tmpl"
+      - "alertmanager/templates/telegram.tmpl"
   workflow_dispatch:
 
 jobs:
@@ -37,20 +37,20 @@ jobs:
             alertmanager-config:
               - 'alertmanager/alertmanager.y*ml'
             alertmanager-templates:
-              - 'alertmanager/templates/*.tmpl'
+              - 'alertmanager/templates/telegram.tmpl'
       - name: Install promtool
         if: >-
           ${{ github.event_name == 'workflow_dispatch' ||
               steps.changes.outputs.prometheus-config == 'true' ||
               steps.changes.outputs.prometheus-web-config == 'true' ||
               steps.changes.outputs.prometheus-rules == 'true' }}
-        run: sudo ./scripts/install.sh "${PROMETHEUS_VERSION}" amd64 prometheus
+        run: sudo ./scripts/install-prom.sh "${PROMETHEUS_VERSION}" amd64 prometheus
       - name: Install amtool
         if: >-
           ${{ github.event_name == 'workflow_dispatch' ||
               steps.changes.outputs.alertmanager-config == 'true' ||
               steps.changes.outputs.alertmanager-templates == 'true' }}
-        run: sudo ./scripts/install.sh "${ALERTMANAGER_VERSION}" amd64 alertmanager
+        run: sudo ./scripts/install-prom.sh "${ALERTMANAGER_VERSION}" amd64 alertmanager
 
       # Manual runs validate all configured files; the web config is optional.
       - name: Validate Prometheus server configuration

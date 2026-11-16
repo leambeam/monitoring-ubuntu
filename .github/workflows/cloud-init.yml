@@ -5,6 +5,7 @@ on:
       - "grafana/**"
       - "node_exporter/**"
       - "prometheus/**"
+      - "alertmanager/**"
       - "scripts/**"
       - "templates/**"
       - "render.py"
