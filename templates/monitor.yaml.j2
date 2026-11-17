@@ -79,8 +79,13 @@ write_files:
     [Resolve]
     MulticastDNS=yes
 
-# Link-level: actually turns mDNS on for enp0s1
+# Support both: "default - enp0s1" (older) and "eth0" (newer)
 - path: /etc/systemd/network/10-netplan-default.network.d/mdns.conf
+  content: |
+    [Network]
+    MulticastDNS=yes
+
+- path: /etc/systemd/network/10-netplan-eth0.network.d/mdns.conf
   content: |
     [Network]
     MulticastDNS=yes
@@ -89,10 +94,17 @@ write_files:
   content: |
     makestep 1.0 -1
 
+# Dracut hijacks network configuration with its default config on newer ubuntu images
+# This is a workaround, and it should be removed once the bug is resolved
+# https://discourse.ubuntu.com/t/server-installation-creates-conflicting-dracut-and-netplan-networking-configuration/87238
+bootcmd:
+  - ln -s /dev/null /etc/systemd/network/zzzz-dracut-default.network
+  - rm -rf /run/systemd/network/zzzz-dracut-default.network
+  - netplan apply
+
 runcmd:
 - [systemctl, restart, systemd-resolved]
 - [networkctl, reload]
-- [networkctl, reconfigure, enp0s1]
 - [sh, /scripts/install-prom.sh, 3.15.1, arm64, prometheus]
 - [sh, /scripts/install-prom.sh, 0.35.0, arm64, alertmanager]
 - sh /scripts/install-grafana.sh 13.3.0 40412481033 arm64
