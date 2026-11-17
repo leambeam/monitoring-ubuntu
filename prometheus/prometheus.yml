@@ -4,7 +4,7 @@ global:
 scrape_configs:
   - job_name: node
     static_configs:
-      - targets: ["target.local:9100"]
+      - targets: ["target-1.local:9100", "target-2.local:9100"]
 
 rule_files:
   - /etc/prometheus/rules/node-alerts.yml
