@@ -94,6 +94,18 @@ write_files:
   content: |
     makestep 1.0 -1
 
+- path: /etc/profile.d/cloud_init_status.sh
+  content: |
+    if [ -f "/home/ubuntu/.not_logged_in_yet" ]; then
+      printf "\n***Cloud-init status***\n\n"
+      cloud-init status --wait --long >&2
+      rm "/home/ubuntu/.not_logged_in_yet"
+    fi
+
+- path: /home/ubuntu/.not_logged_in_yet
+  owner: ubuntu:ubuntu
+  defer: true
+
 # Dracut hijacks network configuration with its default config on newer ubuntu images
 # This is a workaround, and it should be removed once the bug is resolved
 # https://discourse.ubuntu.com/t/server-installation-creates-conflicting-dracut-and-netplan-networking-configuration/87238
